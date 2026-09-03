@@ -1,0 +1,230 @@
+/* SpoilerShield — popup.css */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  width: 360px;
+  min-height: 200px;
+  font-family: system-ui, sans-serif;
+  font-size: 13px;
+  color: #1a1a1a;
+  background: #fff;
+}
+
+/* Header */
+header {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  background: #1a1a2e;
+  color: #fff;
+}
+.logo { font-weight: 700; font-size: 14px; letter-spacing: .3px; }
+
+/* Tabs */
+.tabs {
+  display: flex;
+  border-bottom: 2px solid #e0e0e0;
+  background: #f5f5f5;
+}
+.tab {
+  flex: 1;
+  padding: 8px 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  color: #555;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color .15s, border-color .15s;
+}
+.tab:hover  { color: #1a1a2e; }
+.tab.active { color: #1a1a2e; border-bottom-color: #1a1a2e; font-weight: 700; }
+
+/* Tab panels */
+.tab-panel { display: none; padding: 12px 14px; }
+.tab-panel.active { display: block; }
+
+/* Settings tab */
+.toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  cursor: pointer;
+}
+.toggle-row.master {
+  font-weight: 600;
+  font-size: 13px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 10px;
+}
+fieldset {
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+.hint {
+  margin: 2px 0 8px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #777;
+}
+legend {
+  padding: 0 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  cursor: pointer;
+}
+.checkbox-row input { cursor: pointer; }
+
+/* Rules tab */
+.toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+  align-items: center;
+}
+.btn-primary {
+  padding: 5px 12px;
+  background: #1a1a2e;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+.btn-primary:hover { background: #2e2e5e; }
+.btn-secondary {
+  padding: 5px 12px;
+  background: #f0f0f0;
+  color: #333;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.btn-secondary:hover { background: #e0e0e0; }
+label.btn-secondary { display: inline-flex; align-items: center; }
+
+/* Rule form */
+.rule-form {
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+.rule-form.hidden { display: none; }
+.rule-form h3 { font-size: 13px; margin-bottom: 10px; }
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+.form-row > span { font-weight: 600; color: #444; }
+.form-row input[type="text"] {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 4px 7px;
+  font-size: 12px;
+  width: 100%;
+}
+.inline-checks, .action-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  padding-top: 2px;
+}
+.inline-checks label, .action-checks label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+.form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* Rules list */
+.rules-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+.rule-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 12px;
+}
+.rule-item .rule-sport { font-weight: 700; min-width: 50px; }
+.rule-item .rule-meta  { flex: 1; color: #555; overflow: hidden; }
+.rule-item .rule-meta span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rule-badges { display: flex; gap: 4px; }
+.badge {
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  background: #dce8ff;
+  color: #1a4080;
+}
+.badge.tw { background: #e8d4ff; color: #5a0080; }
+.rule-actions-btns { display: flex; gap: 4px; }
+.btn-icon {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  line-height: 1;
+}
+.btn-icon:hover { background: #e0e0e0; }
+.btn-icon.danger:hover { background: #fde0e0; }
+
+/* Log tab */
+.log-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 320px;
+  overflow-y: auto;
+  font-size: 11px;
+}
+.log-item {
+  padding: 6px 8px;
+  background: #f5f5f5;
+  border-left: 3px solid #1a1a2e;
+  border-radius: 0 4px 4px 0;
+}
+.log-item .log-time { color: #888; font-size: 10px; }
+.log-item .log-title { font-weight: 600; }
+.log-item .log-meta { color: #555; }
+.empty-state { color: #aaa; font-style: italic; padding: 10px 0; text-align: center; }

@@ -1,0 +1,16 @@
+# Build output — regenerate with: npx web-ext build --source-dir spoilershield
+dist/
+web-ext-artifacts/
+*.zip
+*.xpi
+
+# AMO signing credentials — never commit these
+.env
+web-ext-config.js
+
+node_modules/
+
+# OS cruft
+Thumbs.db
+desktop.ini
+.DS_Store

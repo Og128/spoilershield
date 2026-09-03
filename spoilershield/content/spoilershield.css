@@ -1,0 +1,23 @@
+/* Duration badges — hide the text but keep the box, so layout doesn't shift. */
+.sp-hide-duration .sp-duration { visibility: hidden !important; }
+
+/* Clicking the player's time readout toggles it to remaining time ("-4:59"),
+   which leaks the duration just as plainly as the duration field itself. Make
+   it inert so a mis-click can't reveal it. Only the readout is blocked —
+   seeking happens on the progress bar, which is untouched by this. */
+.sp-hide-duration .sp-time-display {
+  pointer-events: none !important;
+  user-select: none !important;
+}
+
+/* Thumbnails.
+   No transform here on purpose. Scaling the thumbnail up (to push the blur's
+   soft edges out of view) doesn't affect layout, so wherever YouTube's own
+   container doesn't clip it the thumbnail spills over its box and sits on top
+   of the title — swallowing clicks on the link. Plain blur it is. */
+.sp-blur-thumbnail .sp-thumbnail {
+  filter: blur(12px) !important;
+}
+
+.sp-hide-progress .sp-progress { display: none !important; }
+.sp-hide-chapters .sp-chapter  { display: none !important; }

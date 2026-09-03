@@ -1,0 +1,18 @@
+/* Pre-emptive blur.
+   Injected at document_start and active only while <html> carries .sp-init —
+   that is, from first paint until the ruleset has loaded and the first pass has
+   classified the page. Without this there is a window of a few hundred
+   milliseconds in which the exact thumbnail the extension exists to hide is
+   fully visible.
+
+   youtube.js removes .sp-init as soon as the first pass completes, and a
+   failsafe timer removes it regardless so a storage failure can never leave the
+   page blurred. */
+
+html.sp-init ytd-thumbnail img,
+html.sp-init yt-thumbnail-view-model,
+html.sp-init ytd-playlist-thumbnail,
+html.sp-init badge-shape,
+html.sp-init ytd-thumbnail-overlay-time-status-renderer {
+  filter: blur(12px) !important;
+}

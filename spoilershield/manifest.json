@@ -1,0 +1,51 @@
+{
+  "manifest_version": 3,
+  "name": "SpoilerShield",
+  "version": "1.0.0",
+  "description": "Hides durations, progress bars, chapters and thumbnails on YouTube so sports results aren't spoiled before you watch.",
+
+  "permissions": ["storage"],
+
+  "host_permissions": [
+    "*://*.youtube.com/*"
+  ],
+
+  "content_scripts": [
+    {
+      "matches": ["*://*.youtube.com/*"],
+      "css": ["content/youtube-preempt.css", "content/spoilershield.css"],
+      "js": ["content/shared.js", "content/youtube.js"],
+      "run_at": "document_start"
+    }
+  ],
+
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "48": "icons/icon.svg",
+      "96": "icons/icon.svg"
+    }
+  },
+
+  "background": {
+    "scripts": ["background.js"]
+  },
+
+  "icons": {
+    "48": "icons/icon.svg",
+    "96": "icons/icon.svg"
+  },
+
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "{1f1da477-3c8b-49b0-b9b4-ea3e436b2d62}",
+      "strict_min_version": "140.0",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
+    },
+    "gecko_android": {
+      "strict_min_version": "142.0"
+    }
+  }
+}

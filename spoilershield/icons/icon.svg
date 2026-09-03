@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <path d="M24 4 L42 12 L42 26 C42 35.9 34 43.4 24 46 C14 43.4 6 35.9 6 26 L6 12 Z"
+        fill="#1a1a2e" />
+  <path d="M24 4 L42 12 L42 26 C42 35.9 34 43.4 24 46 C14 43.4 6 35.9 6 26 L6 12 Z"
+        fill="none" stroke="#4a6cf7" stroke-width="2" />
+  <!-- Eye with strike-through to represent spoiler blocking -->
+  <ellipse cx="24" cy="26" rx="9" ry="6" fill="none" stroke="#fff" stroke-width="2"/>
+  <circle cx="24" cy="26" r="3" fill="#fff"/>
+  <line x1="16" y1="18" x2="32" y2="34" stroke="#e74c3c" stroke-width="2.5" stroke-linecap="round"/>
+</svg>

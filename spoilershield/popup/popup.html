@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SpoilerShield</title>
+
+  <!-- Critical sizing, inlined on purpose.
+       Firefox measures the popup at DOMContentLoaded to decide how large to
+       make the panel (ext-browser-content.js, _handleDOMChange). If popup.css
+       hasn't been applied by then it measures an unstyled document with no
+       width, and the panel is sized from that — which shows up as the toolbar
+       button highlighting without a popup appearing. Duplicating just the
+       dimensions here means the measurement is correct no matter when the
+       external stylesheet lands. Keep these values in sync with popup.css. -->
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { width: 360px; }
+    body {
+      width: 360px;
+      min-height: 200px;
+      font-family: system-ui, sans-serif;
+      font-size: 13px;
+      background: #fff;
+    }
+  </style>
+
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <header>
+    <span class="logo">🛡 SpoilerShield</span>
+  </header>
+
+  <!-- Tab bar -->
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-tab="settings" role="tab" aria-selected="true">Settings</button>
+    <button class="tab"        data-tab="rules"    role="tab" aria-selected="false">Rules</button>
+    <button class="tab"        data-tab="log"      role="tab" aria-selected="false">Log</button>
+  </nav>
+
+  <!-- ===== TAB 1: Settings ===== -->
+  <section id="tab-settings" class="tab-panel active" role="tabpanel">
+    <label class="toggle-row master">
+      <span>Extension enabled</span>
+      <input type="checkbox" id="master-toggle" />
+    </label>
+
+    <fieldset>
+      <legend>Allowed actions</legend>
+      <p class="hint">
+        Global switches. An action only runs if it's enabled here <em>and</em>
+        on the matching rule. Also used to pre-fill new rules.
+      </p>
+
+      <label class="checkbox-row">
+        <input type="checkbox" id="def-hideDuration" />
+        <span>Hide duration</span>
+      </label>
+      <label class="checkbox-row">
+        <input type="checkbox" id="def-hideProgressBar" />
+        <span>Hide / blur progress bar</span>
+      </label>
+      <label class="checkbox-row">
+        <input type="checkbox" id="def-hideChapters" />
+        <span>Hide chapter markers</span>
+      </label>
+      <label class="checkbox-row">
+        <input type="checkbox" id="def-blurThumbnail" />
+        <span>Blur thumbnail</span>
+      </label>
+      <label class="checkbox-row">
+        <input type="checkbox" id="def-rewriteTitle" />
+        <span>Rewrite title</span>
+      </label>
+    </fieldset>
+  </section>
+
+  <!-- ===== TAB 2: Rules ===== -->
+  <section id="tab-rules" class="tab-panel" role="tabpanel">
+    <div class="toolbar">
+      <button id="btn-add-rule" class="btn-primary">+ Add rule</button>
+      <button id="btn-export"   class="btn-secondary">Export</button>
+      <label  class="btn-secondary" id="label-import">
+        Import
+        <input type="file" id="import-file" accept=".json" style="display:none" />
+      </label>
+    </div>
+
+    <!-- Inline rule form (hidden by default) -->
+    <div id="rule-form" class="rule-form hidden">
+      <h3 id="rule-form-title">New rule</h3>
+
+      <label class="form-row">
+        <span>Sport</span>
+        <input type="text" id="rf-sport" placeholder="e.g. NBA" />
+      </label>
+      <label class="form-row">
+        <span>Keywords <small>(comma-separated)</small></span>
+        <input type="text" id="rf-keywords" placeholder="spurs, knicks, celtics" />
+      </label>
+      <label class="form-row">
+        <span>Channels <small>(comma-separated)</small></span>
+        <input type="text" id="rf-channels" placeholder="ESPN, NBA, TNT Sports" />
+      </label>
+
+      <div class="form-row">
+        <span>Action overrides</span>
+        <div class="action-checks">
+          <label><input type="checkbox" id="rf-hideDuration"    /> Hide duration</label>
+          <label><input type="checkbox" id="rf-hideProgressBar" /> Hide progress bar</label>
+          <label><input type="checkbox" id="rf-hideChapters"    /> Hide chapters</label>
+          <label><input type="checkbox" id="rf-blurThumbnail"   /> Blur thumbnail</label>
+          <label><input type="checkbox" id="rf-rewriteTitle"    /> Rewrite title</label>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button id="rf-save"   class="btn-primary">Save</button>
+        <button id="rf-cancel" class="btn-secondary">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Rules list -->
+    <ul id="rules-list" class="rules-list"></ul>
+  </section>
+
+  <!-- ===== TAB 3: Log ===== -->
+  <section id="tab-log" class="tab-panel" role="tabpanel">
+    <div class="toolbar">
+      <button id="btn-clear-log" class="btn-secondary">Clear log</button>
+    </div>
+    <ul id="log-list" class="log-list"></ul>
+  </section>
+
+  <script src="popup.js"></script>
+</body>
+</html>
