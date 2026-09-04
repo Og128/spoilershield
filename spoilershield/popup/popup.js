@@ -2,16 +2,6 @@
 "use strict";
 
 // ---------------------------------------------------------------------------
-// Utility — generate UUID v4
-// ---------------------------------------------------------------------------
-
-function uuidV4() {
-  return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
-    (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
-  );
-}
-
-// ---------------------------------------------------------------------------
 // Tab switching
 // ---------------------------------------------------------------------------
 
@@ -266,7 +256,7 @@ document.getElementById("rf-save").addEventListener("click", async () => {
     const idx = allRules.findIndex(r => r.id === editingRuleId);
     if (idx !== -1) allRules[idx] = { ...allRules[idx], sport, keywords, channels, actions };
   } else {
-    allRules.push({ id: uuidV4(), enabled: true, sport, keywords, channels, actions });
+    allRules.push({ id: crypto.randomUUID(), enabled: true, sport, keywords, channels, actions });
   }
 
   if (await persistRules()) {
@@ -314,7 +304,7 @@ function normaliseImportedRule(raw) {
   for (const key of ACTION_KEYS) actions[key] = !!(raw.actions && raw.actions[key]);
 
   return {
-    id:       typeof raw.id === "string" && raw.id ? raw.id : uuidV4(),
+    id:       typeof raw.id === "string" && raw.id ? raw.id : crypto.randomUUID(),
     enabled:  raw.enabled !== false,
     sport,
     keywords: strings(raw.keywords),

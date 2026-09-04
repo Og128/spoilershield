@@ -91,6 +91,34 @@ get `[LIVE] <channel>` instead of running through the Short/Medium/Long
 classifier — deliberately not duration-based, since elapsed time on a live
 stream only grows, and a duration-based label would change mid-stream.
 
+## ~~22. Fragile watch-page selectors~~ — FIXED
+Was: `h1.ytd-video-primary-info-renderer` and `ytd-channel-name#channel-name`
+alone, both stale against current YouTube markup — failure was a silent no-op.
+
+Now `ytProcessWatchPage` tries a fallback chain of selectors (newer markup
+first, old ones kept as last resort) via `ytQueryFirst()`. If nothing resolves
+for ~3 seconds straight (20 throttled passes) it logs once via
+`console.debug` instead of staying silent, so a future YouTube redesign is
+diagnosable instead of invisible.
+
+## ~~24. Unused `activeTab` permission~~ — Already gone
+`manifest.json`'s `permissions` is just `["storage"]` — this was already
+removed before this pass, entry was stale.
+
+## ~~25. `uuidV4()` reimplements `crypto.randomUUID()`~~ — FIXED
+`popup/popup.js`: swapped both call sites (new rule, import) to
+`crypto.randomUUID()` and deleted the custom implementation. Same call
+shape (synchronous, same two sites), so no behavior change — rule
+activation still doesn't require a page reload, since that comes from the
+`storage.onChanged` listener in `shared.js`, untouched by this change.
+
+## 29. No linter or tests — PARTIALLY ADDRESSED
+Added `spoilershield/test.js` — `node --test`, zero dependencies. Covers
+`spParseDuration`, `spClassifyTitle`, `spMatchRules`, `spIsLive`, and
+`spNormaliseRule`'s tolerance of malformed data (17 tests, all passing).
+Linting (`web-ext lint`) was already run manually each session; not wired
+into CI.
+
 ### 20. Lockup channel extraction is unreliable — *medium*
 `content/youtube.js`, `ytGetCardData` lockup branch:
 `metaEl.textContent.trim().split("\n")[0]`. `yt-content-metadata-view-model`
@@ -103,21 +131,8 @@ Query the specific span instead.
 Often `"ESPNESPN"` (link + tooltip). Matching survives; the Log tab shows
 garbage. Cosmetic.
 
-### 22. Fragile watch-page selectors — *medium*
-`content/youtube.js`, `ytProcessWatchPage`:
-`h1.ytd-video-primary-info-renderer` is long obsolete and
-`ytd-channel-name#channel-name` no longer matches current YouTube. Failure is a
-silent no-op. Add a fallback chain plus a debug log when nothing resolves.
-
 ### ~~23. Twitch card selectors have bad fallbacks~~ — REMOVED
 Was in `content/twitch.js`, deleted with the rest of Twitch support.
-
-### 24. Unused `activeTab` permission — *low*
-Declared in `manifest.json` but never used. Drop it; needless AMO review
-friction.
-
-### 25. `uuidV4()` reimplements `crypto.randomUUID()` — *low*
-`popup/popup.js`. The implementation is correct, just obsolete. One-line swap.
 
 ### 26. `escHtml` doesn't escape `'` — *low*
 Safe today because every attribute in the template is double-quoted, but one
@@ -132,8 +147,3 @@ listener that updates the cache then notifies the platform script.
 ### 28. Unhandled promise rejections — *low*
 `loadSettings()` / `loadRules()` in `popup/popup.js` are fire-and-forget with no
 `.catch()`. (`spRefreshCache` was given a `try/catch` during the fix pass.)
-
-### 29. No linter or tests — *low*
-The three pure functions (`spParseDuration`, `spClassifyTitle`, `spMatchRules`)
-are trivially testable and would have caught #11. A single `test.js` run under
-`node --test` needs no dependencies and no build step.

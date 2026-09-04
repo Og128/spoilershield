@@ -264,6 +264,38 @@ function ytProcessAllCards() {
 // Watch-page player actions
 // ---------------------------------------------------------------------------
 
+// Fallback chains, tried in order. YouTube has redesigned this markup before
+// and the old single selectors (h1.ytd-video-primary-info-renderer,
+// ytd-channel-name#channel-name alone) had gone stale — this widens the net
+// and keeps the legacy ones as a last resort rather than dropping them.
+const WATCH_TITLE_SELECTORS = [
+  "ytd-watch-metadata h1 yt-formatted-string",
+  "#title h1 yt-formatted-string",
+  "h1.ytd-video-primary-info-renderer",
+  "h1 yt-formatted-string"
+];
+const WATCH_CHANNEL_SELECTORS = [
+  "ytd-video-owner-renderer ytd-channel-name#channel-name a",
+  "#channel-name #text a",
+  "#upload-info ytd-channel-name",
+  "ytd-channel-name#channel-name"
+];
+
+function ytQueryFirst(selectors) {
+  for (const sel of selectors) {
+    const el = document.querySelector(sel);
+    if (el) return el;
+  }
+  return null;
+}
+
+// How many consecutive misses before we treat it as "selectors are stale"
+// rather than "metadata hasn't rendered yet" and log it. At the ~150ms
+// throttle this is a few seconds — real page loads resolve well before that.
+const WATCH_MISS_LOG_THRESHOLD = 20;
+let ytWatchMissVideoId = null;
+let ytWatchMissCount   = 0;
+
 function ytProcessWatchPage() {
   if (!location.pathname.startsWith("/watch")) return;
 
@@ -276,13 +308,27 @@ function ytProcessWatchPage() {
   const videoId = new URLSearchParams(location.search).get("v") || "";
   if (player.dataset.spWatchId === videoId) return;
 
-  const titleEl   = document.querySelector("h1.ytd-video-primary-info-renderer, h1 yt-formatted-string");
-  const channelEl = document.querySelector("ytd-channel-name#channel-name, #upload-info ytd-channel-name");
+  const titleEl   = ytQueryFirst(WATCH_TITLE_SELECTORS);
+  const channelEl = ytQueryFirst(WATCH_CHANNEL_SELECTORS);
   const title     = titleEl   ? titleEl.textContent.trim()   : "";
   const channel   = channelEl ? channelEl.textContent.trim() : "";
 
-  // Metadata not populated yet — retry on the next pass rather than caching a miss.
-  if (!title && !channel) return;
+  // Metadata not populated yet — retry on the next pass rather than caching a
+  // miss. Only worth logging once a video has gone several seconds without
+  // resolving, since that stops being "still loading" and starts being
+  // "selectors don't match this page anymore".
+  if (!title && !channel) {
+    if (ytWatchMissVideoId !== videoId) {
+      ytWatchMissVideoId = videoId;
+      ytWatchMissCount = 0;
+    }
+    ytWatchMissCount++;
+    if (ytWatchMissCount === WATCH_MISS_LOG_THRESHOLD) {
+      console.debug("SpoilerShield: watch-page title/channel selectors found nothing after repeated passes — YouTube markup may have changed", videoId);
+    }
+    return;
+  }
+  ytWatchMissCount = 0;
   player.dataset.spWatchId = videoId;
 
   const result = spMatchRules(spCache.rules, spCache.settings, channel, title);
