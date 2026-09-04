@@ -156,7 +156,7 @@ function ytProcessChannelPage() {
     "";
   if (!channelName) return;
 
-  const result = spMatchRules(spCache.rules, spCache.settings, "youtube", channelName, "");
+  const result = spMatchRules(spCache.rules, spCache.settings, channelName, "");
   if (!result) return;
 
   const { actions, matchedRules } = result;
@@ -176,7 +176,9 @@ function ytProcessChannelPage() {
       card.classList.add("sp-hide-duration");
     }
     if (actions.rewriteTitle && titleEl && title) {
-      const label = spClassifyTitle(title, spParseDuration(durationTxt), sport);
+      const label = spIsLive(durationTxt)
+        ? `[LIVE] ${channelName}`
+        : spClassifyTitle(title, spParseDuration(durationTxt), sport);
       if (label) ytApplyTitle(card, titleEl, title, label);
     }
   });
@@ -196,7 +198,7 @@ function ytProcessCard(card) {
 
   card.dataset.spProcessed = "true";
 
-  const result = spMatchRules(spCache.rules, spCache.settings, "youtube", channel, title);
+  const result = spMatchRules(spCache.rules, spCache.settings, channel, title);
   if (!result) return;
 
   const { actions, matchedRules } = result;
@@ -214,7 +216,9 @@ function ytProcessCard(card) {
   // Title rewrite
   let titleLabel = null;
   if (actions.rewriteTitle && titleEl) {
-    titleLabel = spClassifyTitle(title, durationSecs, sport);
+    titleLabel = spIsLive(durationTxt)
+      ? `[LIVE] ${channel || sport}`
+      : spClassifyTitle(title, durationSecs, sport);
     if (titleLabel) ytApplyTitle(card, titleEl, title, titleLabel);
   }
 
@@ -229,9 +233,30 @@ function ytProcessCard(card) {
   });
 }
 
+// Re-pin sp-thumbnail / sp-duration on sub-elements YouTube has replaced.
+// The action classes (sp-blur-thumbnail, sp-hide-duration) live on the card
+// and survive a re-render; the matching sp-thumbnail / sp-duration classes
+// live on the <img> / badge inside it, which YouTube can recreate on its own
+// (e.g. a responsive layout swap on window resize) without us being told.
+// A recreated element starts with no classes, so the CSS silently stops
+// matching even though the card is still fully processed. Mirrors
+// ytReapplyTitles, which solves the identical problem for titles.
+function ytReapplySubElementClasses() {
+  document.querySelectorAll(".sp-blur-thumbnail, .sp-hide-duration").forEach(card => {
+    const { thumbEl, durationEl } = ytGetCardData(card);
+    if (card.classList.contains("sp-blur-thumbnail") && thumbEl) {
+      thumbEl.classList.add("sp-thumbnail");
+    }
+    if (card.classList.contains("sp-hide-duration") && durationEl) {
+      durationEl.classList.add("sp-duration");
+    }
+  });
+}
+
 function ytProcessAllCards() {
   document.querySelectorAll(UNPROCESSED_CARDS).forEach(ytProcessCard);
   ytReapplyTitles();
+  ytReapplySubElementClasses();
   ytProcessChannelPage();
 }
 
@@ -260,7 +285,7 @@ function ytProcessWatchPage() {
   if (!title && !channel) return;
   player.dataset.spWatchId = videoId;
 
-  const result = spMatchRules(spCache.rules, spCache.settings, "youtube", channel, title);
+  const result = spMatchRules(spCache.rules, spCache.settings, channel, title);
   if (!result) return;
 
   const { actions } = result;

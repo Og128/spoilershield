@@ -74,6 +74,17 @@ async function loadRules() {
   renderRules();
 }
 
+const rulesStatus = document.getElementById("rules-status");
+
+function showRulesStatus(message, type) {
+  rulesStatus.textContent = message;
+  rulesStatus.className = `status-banner ${type}`;
+}
+
+function clearRulesStatus() {
+  rulesStatus.className = "status-banner hidden";
+}
+
 // Everything below builds DOM nodes rather than assigning innerHTML. Rule text
 // is user-supplied, and AMO's linter flags dynamic innerHTML on sight
 // (UNSAFE_VAR_ASSIGNMENT). Using textContent makes escaping structural instead
@@ -112,7 +123,7 @@ function renderRules() {
     toggle.checked = !!rule.enabled;
     toggle.addEventListener("change", async e => {
       rule.enabled = e.target.checked;
-      await persistRules();
+      if (!(await persistRules())) await loadRules();
     });
 
     const meta = makeEl("div", { className: "rule-meta" });
@@ -124,15 +135,33 @@ function renderRules() {
     const edit = makeEl("button", { className: "btn-icon edit-rule", text: "✏️", title: "Edit" });
     edit.addEventListener("click", () => openRuleForm(rule));
 
-    const del = makeEl("button", { className: "btn-icon danger delete-rule", text: "🗑️", title: "Delete" });
-    del.addEventListener("click", async () => {
-      if (!confirm(`Delete rule for "${rule.sport}"?`)) return;
-      allRules = allRules.filter(r => r.id !== rule.id);
-      await persistRules();
-      renderRules();
-    });
-
     const buttons = makeEl("div", { className: "rule-actions-btns" });
+
+    // Two-step inline confirm instead of confirm() — a blocking native dialog
+    // is unreliable in an extension popup, which can lose focus or get torn
+    // down while it's open (see the "popup needed two clicks" entry in
+    // AUDIT.md for the same class of popup-lifecycle fragility).
+    function showDeleteConfirm() {
+      const label = makeEl("span", { className: "confirm-label", text: "Delete?" });
+      const yes   = makeEl("button", { className: "btn-icon danger", text: "✓", title: `Confirm delete "${rule.sport}"` });
+      const no    = makeEl("button", { className: "btn-icon", text: "✕", title: "Cancel" });
+
+      yes.addEventListener("click", async () => {
+        allRules = allRules.filter(r => r.id !== rule.id);
+        if (await persistRules()) {
+          renderRules();
+        } else {
+          await loadRules();
+        }
+      });
+      no.addEventListener("click", () => buttons.replaceChildren(edit, del));
+
+      buttons.replaceChildren(label, no, yes);
+    }
+
+    const del = makeEl("button", { className: "btn-icon danger delete-rule", text: "🗑️", title: "Delete" });
+    del.addEventListener("click", showDeleteConfirm);
+
     buttons.append(edit, del);
 
     li.append(
@@ -148,7 +177,19 @@ function renderRules() {
 }
 
 async function persistRules() {
-  await browser.storage.sync.set({ rules: allRules });
+  try {
+    await browser.storage.sync.set({ rules: allRules });
+    clearRulesStatus();
+    return true;
+  } catch (err) {
+    console.error("SpoilerShield: failed to save rules", err);
+    showRulesStatus(
+      "Couldn't save — rule storage is full (8KB limit). Delete a rule or " +
+      "shorten keywords/channels, then try again.",
+      "error"
+    );
+    return false;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -158,6 +199,7 @@ async function persistRules() {
 const ruleForm     = document.getElementById("rule-form");
 const rfTitle      = document.getElementById("rule-form-title");
 const rfSport      = document.getElementById("rf-sport");
+const rfSportError = document.getElementById("rf-sport-error");
 const rfKeywords   = document.getElementById("rf-keywords");
 const rfChannels   = document.getElementById("rf-channels");
 const rfActions    = {
@@ -191,9 +233,14 @@ async function openRuleForm(existingRule) {
     }
   }
 
+  rfSportError.classList.add("hidden");
   ruleForm.classList.remove("hidden");
   rfSport.focus();
 }
+
+// Clear the validation message as soon as the user starts fixing it, rather
+// than leaving a stale "required" error up after they've typed something.
+rfSport.addEventListener("input", () => rfSportError.classList.add("hidden"));
 
 function closeRuleForm() {
   ruleForm.classList.add("hidden");
@@ -207,23 +254,27 @@ document.getElementById("rf-save").addEventListener("click", async () => {
   const sport    = rfSport.value.trim();
   const keywords = rfKeywords.value.split(",").map(s => s.trim()).filter(Boolean);
   const channels = rfChannels.value.split(",").map(s => s.trim()).filter(Boolean);
-  // YouTube-only release. The field is kept in the rule shape (and honoured by
-  // spMatchRules) so Twitch can come back without a storage migration.
-  const platforms = ["youtube"];
-  const actions   = Object.fromEntries(Object.entries(rfActions).map(([k, el]) => [k, el.checked]));
+  const actions  = Object.fromEntries(Object.entries(rfActions).map(([k, el]) => [k, el.checked]));
 
-  if (!sport) { alert("Sport name is required."); return; }
+  if (!sport) {
+    rfSportError.classList.remove("hidden");
+    rfSport.focus();
+    return;
+  }
 
   if (editingRuleId) {
     const idx = allRules.findIndex(r => r.id === editingRuleId);
-    if (idx !== -1) allRules[idx] = { ...allRules[idx], sport, keywords, channels, platforms, actions };
+    if (idx !== -1) allRules[idx] = { ...allRules[idx], sport, keywords, channels, actions };
   } else {
-    allRules.push({ id: uuidV4(), enabled: true, sport, keywords, channels, platforms, actions });
+    allRules.push({ id: uuidV4(), enabled: true, sport, keywords, channels, actions });
   }
 
-  await persistRules();
-  renderRules();
-  closeRuleForm();
+  if (await persistRules()) {
+    renderRules();
+    closeRuleForm();
+  } else {
+    await loadRules();
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -241,10 +292,10 @@ document.getElementById("btn-export").addEventListener("click", () => {
 });
 
 // Coerce an imported entry into the exact shape the content scripts expect.
-// spMatchRules does rule.platforms.includes(...) and rule.channels.some(...)
-// unguarded, so a rule missing those fields throws inside the MutationObserver
-// callback on every pass — one bad import would otherwise brick the extension
-// on every page with no visible cause.
+// spMatchRules does rule.channels.some(...) unguarded, so a rule missing that
+// field throws inside the MutationObserver callback on every pass — one bad
+// import would otherwise brick the extension on every page with no visible
+// cause.
 const ACTION_KEYS = [
   "hideDuration", "hideProgressBar", "hideChapters", "blurThumbnail", "rewriteTitle"
 ];
@@ -268,9 +319,6 @@ function normaliseImportedRule(raw) {
     sport,
     keywords: strings(raw.keywords),
     channels: strings(raw.channels),
-    // Force YouTube: a file exported from a build with Twitch enabled would
-    // otherwise import rules that can never match anything.
-    platforms: ["youtube"],
     actions
   };
 }
@@ -297,15 +345,22 @@ document.getElementById("import-file").addEventListener("change", async e => {
     }
 
     allRules = [...allRules, ...newRules];
-    await persistRules();
-    renderRules();
-
-    const notes = [];
-    if (skippedDuplicate) notes.push(`${skippedDuplicate} duplicate(s) skipped`);
-    if (skippedInvalid)   notes.push(`${skippedInvalid} invalid entr(ies) skipped`);
-    alert(`Imported ${newRules.length} new rule(s).${notes.length ? " " + notes.join(", ") + "." : ""}`);
+    if (await persistRules()) {
+      renderRules();
+      const notes = [];
+      if (skippedDuplicate) notes.push(`${skippedDuplicate} duplicate(s) skipped`);
+      if (skippedInvalid)   notes.push(`${skippedInvalid} invalid entr(ies) skipped`);
+      showRulesStatus(
+        `Imported ${newRules.length} new rule(s).${notes.length ? " " + notes.join(", ") + "." : ""}`,
+        "info"
+      );
+    } else {
+      // persistRules() already surfaced the storage-quota error — don't
+      // claim success on top of it.
+      await loadRules();
+    }
   } catch (err) {
-    alert(`Import failed: ${err.message}`);
+    showRulesStatus(`Import failed: ${err.message}`, "error");
   }
   e.target.value = "";
 });

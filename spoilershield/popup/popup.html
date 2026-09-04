@@ -87,6 +87,8 @@
       </label>
     </div>
 
+    <p id="rules-status" class="status-banner hidden" role="alert"></p>
+
     <!-- Inline rule form (hidden by default) -->
     <div id="rule-form" class="rule-form hidden">
       <h3 id="rule-form-title">New rule</h3>
@@ -94,6 +96,7 @@
       <label class="form-row">
         <span>Sport</span>
         <input type="text" id="rf-sport" placeholder="e.g. NBA" />
+        <small id="rf-sport-error" class="field-error hidden">Sport name is required.</small>
       </label>
       <label class="form-row">
         <span>Keywords <small>(comma-separated)</small></span>

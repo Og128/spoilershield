@@ -9,32 +9,13 @@ than add it.
 
 ---
 
-## Deferred — Twitch (whole platform parked for now)
-
-### 7. Twitch is inert unless you land directly on a VOD URL — *high*
-`content/twitch.js:22` throws at the top level to bail out on irrelevant pages,
-which means the `history.pushState` patch and the observer below it are never
-registered. Content scripts inject once per document and Twitch is a SPA, so
-opening `twitch.tv` and clicking through to a VOD does nothing at all. Only a
-direct VOD URL works.
-
-**Fix:** always install the navigation listener; move the relevance check inside
-the per-pass functions instead of at module top level. Patch `replaceState` too —
-React Router uses both.
-
-### 8. Twitch marks cards processed before reading them — *high*
-`content/twitch.js:52-56` sets `spProcessed = "true"` unconditionally, before
-extracting card data. YouTube's version correctly waits for a title first. Any
-lazily-rendered Twitch card is permanently skipped. Mirror the YouTube approach.
-
-### 9. Twitch title rewrites don't stick — *high*
-`content/twitch.js:81` assigns `titleEl.textContent` directly. YouTube
-deliberately targets the inner `<span>` (`ytWriteTitle`) because React/Polymer
-re-render over a naive assignment, and has `ytReapplyTitles` as a second line of
-defence. Twitch has neither, so the label flashes and reverts.
-
-Also: the Twitch watch page only implements `hideProgressBar`. `hideDuration` and
-`hideChapters` are offered in the UI but do nothing there.
+## ~~Twitch (whole platform parked for now)~~ — REMOVED
+Was: items 7–9 tracked bugs in the unshipped `wip/twitch.js` (inert until a
+direct VOD URL, cards marked processed before read, title rewrites not
+sticking). Twitch support has been dropped entirely rather than fixed —
+`wip/twitch.js` is deleted, and the `platforms` field that existed only to
+let it return later is gone from the rule shape, `spMatchRules`, and the
+popup. YouTube-only, for real now.
 
 ---
 
@@ -79,21 +60,36 @@ gets a sane size on the failing click.
 
 ## Deferred — robustness
 
-### 17. `storage.sync` 8KB-per-item quota, unhandled — *medium*
-All rules live under a single `rules` key. Firefox's `QUOTA_BYTES_PER_ITEM` is
-8192, and `persistRules()` (`popup/popup.js`) has no `.catch()` — so a large
-ruleset fails to save **silently**. At minimum, catch and surface it; better,
-split rules across keys or warn as the budget fills.
+## ~~17. `storage.sync` 8KB-per-item quota, unhandled~~ — FIXED
+Was: all rules live under a single `rules` key. Firefox's `QUOTA_BYTES_PER_ITEM`
+is 8192, and `persistRules()` had no `.catch()` — so a large ruleset failed to
+save **silently**.
 
-### 18. `alert()` / `confirm()` in a popup — *medium*
-`popup/popup.js` uses them for delete confirmation and import results. These are
-unreliable in Firefox extension popups; the popup can detach or dismiss.
-Replace with inline UI.
+Now `persistRules()` catches the rejection, shows it in a status banner
+(`#rules-status` in `popup/popup.html`), and returns `true`/`false`. Every
+caller reloads from storage on failure so the UI can't show a change that
+wasn't actually persisted.
 
-### 19. Live streams never get a rewritten title — *medium*
-`spParseDuration` returns `0` for "LIVE" / "EN DIRECT", so `spClassifyTitle`
-returns `null` and the title is left intact — on exactly the content most likely
-to spoil. Detect the live badge and emit a `Live — <sport>` label.
+## ~~18. `alert()` / `confirm()` in a popup~~ — FIXED
+Was: `popup/popup.js` used them for delete confirmation and import results —
+unreliable in Firefox extension popups, which can lose focus or get torn down
+while a blocking native dialog is open.
+
+Replaced with inline UI: delete is a two-step confirm/cancel row swapped into
+the rule item itself; the sport-required check is a `.field-error` under the
+input; import success/failure use the same `#rules-status` banner as #17
+(`.info` / `.error` variants).
+
+## ~~19. Live streams never get a rewritten title~~ — FIXED
+Was: `spParseDuration` returns `0` for "LIVE" / "EN DIRECT", so
+`spClassifyTitle` returned `null` and the title was left intact — on exactly
+the content most likely to spoil.
+
+Added `spIsLive(durationTxt)` (`content/shared.js`) to detect the badge text
+directly rather than inferring "live" from an unparseable duration. Live cards
+get `[LIVE] <channel>` instead of running through the Short/Medium/Long
+classifier — deliberately not duration-based, since elapsed time on a live
+stream only grows, and a duration-based label would change mid-stream.
 
 ### 20. Lockup channel extraction is unreliable — *medium*
 `content/youtube.js`, `ytGetCardData` lockup branch:
@@ -113,9 +109,8 @@ garbage. Cosmetic.
 `ytd-channel-name#channel-name` no longer matches current YouTube. Failure is a
 silent no-op. Add a fallback chain plus a debug log when nothing resolves.
 
-### 23. Twitch card selectors have bad fallbacks — *low*
-`content/twitch.js:32-33` falls back to `p` for the channel and `h2` for the
-title — both grab arbitrary elements.
+### ~~23. Twitch card selectors have bad fallbacks~~ — REMOVED
+Was in `content/twitch.js`, deleted with the rest of Twitch support.
 
 ### 24. Unused `activeTab` permission — *low*
 Declared in `manifest.json` but never used. Drop it; needless AMO review

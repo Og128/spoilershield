@@ -23,6 +23,15 @@ function spParseDuration(text) {
   return 0;
 }
 
+// A live stream shows a "LIVE" badge instead of a duration. Its elapsed time
+// only grows, so running it through the same Short/Medium/Long classification
+// as a VOD would make the title change while you're watching. Detect it from
+// the badge text instead of treating "duration unparseable" as "live" — a
+// video whose duration just hasn't loaded yet would otherwise be misread.
+function spIsLive(durationTxt) {
+  return /^(live|en direct)$/i.test((durationTxt || "").trim());
+}
+
 // ---------------------------------------------------------------------------
 // Rule normalisation
 // Rules can arrive from storage having been hand-edited or imported from
@@ -54,10 +63,9 @@ function spNormaliseRule(rule) {
   }
 
   return {
-    id:        typeof rule.id    === "string" ? rule.id    : "",
-    sport:     typeof rule.sport === "string" ? rule.sport : "",
-    enabled:   rule.enabled !== false,
-    platforms: spStringList(rule.platforms),
+    id:      typeof rule.id    === "string" ? rule.id    : "",
+    sport:   typeof rule.sport === "string" ? rule.sport : "",
+    enabled: rule.enabled !== false,
     keywords,
     channels,
     actions,
@@ -73,7 +81,7 @@ function spNormaliseRule(rule) {
 // or null if nothing matched.
 // ---------------------------------------------------------------------------
 
-function spMatchRules(rules, settings, platform, channelName, rawTitle) {
+function spMatchRules(rules, settings, channelName, rawTitle) {
   if (!settings || !settings.enabled) return null;
 
   const ch  = (channelName || "").toLowerCase();
@@ -92,7 +100,6 @@ function spMatchRules(rules, settings, platform, channelName, rawTitle) {
   // Single pass: collect matches and merge their actions at the same time.
   for (const rule of rules) {
     if (!rule.enabled) continue;
-    if (!rule.platforms.includes(platform)) continue;
 
     const hit =
       (ch  && rule.lcChannels.some(c => ch.includes(c))) ||

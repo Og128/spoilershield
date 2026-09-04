@@ -79,7 +79,6 @@ spoilershield/
     spoilershield.css      the actual hiding
     youtube-preempt.css    blurs thumbnails from first paint until rules load
   popup/                   settings, rule editor, log
-wip/                       Twitch support — not shipped, see AUDIT.md
 AUDIT.md                   known issues and deferred work
 ```
 
@@ -100,6 +99,5 @@ reading before re-diagnosing something.
 
 ## Status
 
-YouTube only. Twitch support exists in `wip/` but is not shipped — see
-`AUDIT.md` items 7–9 for what's broken.
+YouTube only.
 # spoilershield
